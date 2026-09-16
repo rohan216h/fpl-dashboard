@@ -1,0 +1,71 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Team {
+  id        Int      @id // use FPL's own team id
+  name      String
+  shortName String
+  players   Player[]
+}
+
+model Player {
+  id            Int      @id // FPL's own player id
+  firstName     String
+  secondName    String
+  webName       String
+  teamId        Int
+  team          Team     @relation(fields: [teamId], references: [id])
+  position      String   // GK, DEF, MID, FWD
+  nowCost       Int      // price, in tenths (FPL format)
+  totalPoints   Int
+  form          Float
+  stats         PlayerGameweekStat[]
+}
+
+model Gameweek {
+  id        Int      @id // FPL event id
+  name      String
+  deadline  DateTime
+  finished  Boolean
+  fixtures  Fixture[]
+  stats     PlayerGameweekStat[]
+}
+
+model Fixture {
+  id              Int      @id
+  gameweekId      Int
+  gameweek        Gameweek @relation(fields: [gameweekId], references: [id])
+  homeTeamId      Int
+  awayTeamId      Int
+  homeDifficulty  Int
+  awayDifficulty  Int
+  kickoffTime     DateTime?
+}
+
+model PlayerGameweekStat {
+  id          Int      @id @default(autoincrement())
+  playerId    Int
+  player      Player   @relation(fields: [playerId], references: [id])
+  gameweekId  Int
+  gameweek    Gameweek @relation(fields: [gameweekId], references: [id])
+  points      Int
+  minutes     Int
+  goals       Int
+  assists     Int
+
+  @@unique([playerId, gameweekId])
+}
+
+model User {
+  id           Int      @id @default(autoincrement())
+  email        String   @unique
+  passwordHash String
+  fplTeamId    Int?     // the user's real FPL team id, linked after signup
+  createdAt    DateTime @default(now())
+}
