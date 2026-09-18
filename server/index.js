@@ -12,7 +12,17 @@ const { startScheduler } = require('./jobs/scheduler');
 const { syncFplData } = require('./scripts/syncFplData');
 
 const app = express();
-app.use(cors());
+
+const allowedOrigins = [
+  'http://localhost:5173', // local dev
+  'https://fpl-dashboard-97amon91w-rtc-9f10.vercel.app', // deployed frontend
+];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+  })
+);
 app.use(express.json());
 
 app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
@@ -29,9 +39,6 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   startScheduler();
 
-  // Run an initial sync once on startup so the database is populated
-  // immediately after a fresh deploy, without waiting for the next
-  // scheduled 6-hour run. Safe to run repeatedly since it's all upserts.
   syncFplData().catch((err) => {
     console.error('Initial startup sync failed:', err);
   });
