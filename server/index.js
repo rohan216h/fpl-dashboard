@@ -9,6 +9,7 @@ const gameweeksRouter = require('./routes/gameweeks');
 const authRouter = require('./routes/auth');
 const featuresRouter = require('./routes/features');
 const { startScheduler } = require('./jobs/scheduler');
+const { syncFplData } = require('./scripts/syncFplData');
 
 const app = express();
 app.use(cors());
@@ -27,4 +28,11 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   startScheduler();
+
+  // Run an initial sync once on startup so the database is populated
+  // immediately after a fresh deploy, without waiting for the next
+  // scheduled 6-hour run. Safe to run repeatedly since it's all upserts.
+  syncFplData().catch((err) => {
+    console.error('Initial startup sync failed:', err);
+  });
 });
